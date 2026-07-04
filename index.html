@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Clicker: Emir Squat Edition</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background-color: #1a1a1a;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; color: #fff; user-select: none;
+        }
+
+        .game-container {
+            width: 390px; height: 780px;
+            background-color: #ded5c6; border-radius: 24px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center;
+            padding-top: 15px; box-sizing: border-box;
+        }
+
+        /* 📢 GLOBAL CANLI CHAT BANDI */
+        .global-marquee-wrapper {
+            width: 92%; background: rgba(26, 35, 126, 0.95);
+            border: 1px solid #2196f3; border-radius: 8px;
+            padding: 6px 10px; margin-bottom: 8px; font-size: 12px;
+            overflow: hidden; white-space: nowrap; box-sizing: border-box;
+            z-index: 5; height: 30px; display: flex; align-items: center;
+        }
+        .global-marquee {
+            display: inline-block; padding-left: 100%;
+            animation: marquee 12s linear infinite;
+            color: #fff; font-weight: bold;
+        }
+        @keyframes marquee {
+            0%   { transform: translate(0, 0); }
+            100% { transform: translate(-150%, 0); }
+        }
+
+        /* Üst Ekonomi Alanı */
+        .top-status {
+            width: 92%; display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 6px; z-index: 5;
+        }
+        .currency-box {
+            background: linear-gradient(135deg, #2c2c2c, #111); 
+            padding: 8px 14px; border-radius: 12px;
+            font-size: 14px; font-weight: bold; display: flex; flex-direction: column; gap: 2px;
+            border: 1px solid #444; width: 46%;
+        }
+        .gold-txt { color: #ffd700; display: flex; align-items: center; gap: 4px; font-size: 14px; }
+        .pet-txt { color: #00e676; font-size: 11px; font-weight: bold; }
+        
+        .multiplier-box {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 8px 14px; border-radius: 12px;
+            font-size: 12px; font-weight: bold; text-align: center;
+            border: 1px solid #4f83cc; width: 46%;
+        }
+        .mult-value { color: #00e676; font-size: 16px; display: block; font-weight: 900; }
+
+        /* Skor */
+        .stat-container { text-align: center; margin-top: 2px; }
+        .title { font-size: 12px; color: rgba(0, 0, 0, 0.5); text-transform: uppercase; font-weight: bold; margin: 0;}
+        .score { font-size: 44px; font-weight: bold; color: #222; margin: 0; line-height: 1; }
+        .high-score { font-size: 11px; color: rgba(0,0,0,0.6); font-weight: bold; }
+
+        /* 🎒 SOL ORTA ÇANTA BUTONU VE ÇEKMECESİ */
+        .left-bag-trigger {
+            position: absolute; left: 10px; top: 38%;
+            width: 42px; height: 42px; background: #ff9800;
+            border: 2px solid #fff; border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 22px; cursor: pointer; z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .slots-drawer {
+            position: absolute; left: -300px; top: 22%;
+            width: 250px; background: rgba(0,0,0,0.95); border-radius: 16px;
+            padding: 12px; border: 2px solid #ff9800; z-index: 9;
+            box-shadow: 5px 5px 25px rgba(0,0,0,0.6);
+            transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .slots-drawer.open { left: 60px; }
+        .slots-banner-title { font-size: 11px; color: #ffd700; font-weight: bold; text-align: center; margin-bottom: 8px; }
+        .slots-holder { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+        .slot-dot {
+            width: 32px; height: 32px; background: #222; border: 1px solid #555;
+            border-radius: 6px; font-size: 18px; display: flex; align-items: center; justify-content: center;
+        }
+        .slot-dot.full { background: #1b3a24; border-color: #00e676; }
+
+        /* Sahne */
+        .stage {
+            position: absolute; bottom: 310px; width: 100%; height: 200px;
+            display: flex; justify-content: center; align-items: flex-end;
+        }
+        .character-wrapper { position: relative; width: 220px; height: 100%; transition: all 0.15s ease-out;}
+        
+        /* 🏋️ GERÇEK ANATOMİK VÜCUT VE KIYAFET KATMANLARI */
+        .char-head { 
+            width: 44px; height: 48px; background-color: #f6d283; border-radius: 50%; 
+            position: absolute; bottom: 90px; left: 88px; transition: all 0.15s ease-out; z-index: 4;
+        }
+        .char-body { 
+            width: 56px; height: 60px; background-color: #573e36; border-radius: 8px 8px 0 0; 
+            position: absolute; bottom: 32px; left: 82px; transition: all 0.15s ease-out; z-index: 3;
+        }
+        
+        /* 🦵 YENİ BACAKLAR VE AYAKLAR */
+        .char-legs-container {
+            position: absolute; bottom: 0; left: 86px; width: 48px; height: 35px;
+            display: flex; justify-content: space-between; z-index: 2; transition: all 0.15s ease-out;
+        }
+        .leg {
+            width: 14px; height: 32px; background-color: #573e36; border-radius: 4px;
+            position: relative; transition: all 0.15s ease-out;
+        }
+        .foot {
+            width: 20px; height: 8px; background-color: #333; position: absolute; bottom: 0; left: -3px;
+            border-radius: 4px 4px 0 0; transition: all 0.15s ease-out;
+        }
+
+        /* 👒 GERÇEK KIYAFETLER VE GÖRSEL KATMANLAR (EMOJİ DEĞİL) */
+        .hat-layer {
+            position: absolute; top: -16px; left: -6px; width: 56px; height: 20px;
+            border-radius: 50% 50% 0 0; display: none; z-index: 5;
+        }
+        .hat-brim {
+            position: absolute; bottom: 0; left: -10px; width: 76px; height: 6px;
+            background: inherit; border-radius: 4px; display: none;
+        }
+        .hair-layer {
+            position: absolute; top: -8px; left: 2px; width: 40px; height: 20px;
+            border-radius: 20px 20px 0 0; display: none; z-index: 3;
+        }
+        .eyes-layer {
+            position: absolute; top: 16px; left: 6px; width: 32px; height: 8px;
+            background: #000; border-radius: 2px; display: none; z-index: 5;
+        }
+
+        /* Canlı Çoklu Pet Uçuş Alanı */
+        .pet-swarm {
+            position: absolute; bottom: 30px; left: -10px; width: 80px;
+            display: flex; flex-wrap: wrap; gap: 2px; justify-content: center;
+            animation: floatSwarm 2s ease-in-out infinite; z-index: 6;
+        }
+        @keyframes floatSwarm { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        /* Halter Kontrolleri */
+        .lift-group { position: absolute; bottom: 45px; left: 10px; width: 200px; height: 100px; transition: all 0.15s ease-out; z-index: 5;}
+        .left-arm, .right-arm { width: 12px; height: 40px; background-color: #f6d283; position: absolute; bottom: 15px; border-radius: 6px; transition: all 0.15s; }
+        .left-arm { left: 56px; transform: rotate(-20deg); }
+        .right-arm { right: 56px; transform: rotate(20deg); }
+        .barbell-bar { width: 160px; height: 6px; background-color: #555; position: absolute; bottom: 52px; left: 20px; }
+        
+        .weight-plates { width: 24px; height: 48px; background-color: #111; position: absolute; bottom: 32px; border-radius: 4px; transition: all 0.2s; }
+        .plates-left { left: 10px; }
+        .plates-right { right: 10px; }
+        .barbell-glow { position: absolute; top: -10px; left: 40px; font-size: 11px; color: #ffd700; opacity: 0.8; display: none;}
+
+        /* 🏋️‍♂️ SQUAT VE LIFT POZİSYON ANİMASYON DURUMLARI */
+        /* Çömelme Anı (Squatting) */
+        .squatting .char-head { bottom: 65px; }
+        .squatting .char-body { height: 45px; bottom: 25px; }
+        .squatting .char-legs-container { height: 25px; }
+        .squatting .leg { height: 22px; transform: scaleY(0.7); }
+        .squatting .lift-group { bottom: 20px; }
+        .squatting .left-arm { transform: rotate(-40deg); }
+        .squatting .right-arm { transform: rotate(40deg); }
+
+        /* Havaya Kaldırma Anı (Ayağa Kalkış & Havada Bar) */
+        .lifting-up .char-head { bottom: 95px; }
+        .lifting-up .char-body { height: 60px; bottom: 32px; }
+        .lifting-up .char-legs-container { height: 35px; }
+        .lifting-up .leg { height: 32px; transform: scaleY(1); }
+        .lifting-up .lift-group { bottom: 85px; }
+        .lifting-up .left-arm { transform: rotate(-140deg); bottom: 35px; }
+        .lifting-up .right-arm { transform: rotate(140deg); bottom: 35px; }
+
+        /* Kontroller */
+        .controls { position: absolute; bottom: 10px; width: 92%; display: flex; flex-direction: column; gap: 4px; }
+        
+        .btn-lift {
+            width: 100%; padding: 13px; border: none; border-radius: 50px;
+            font-size: 18px; font-weight: bold; cursor: pointer; text-transform: uppercase; text-align: center;
+            background-color: #e65f33; color: white; box-shadow: 0 4px 12px rgba(230, 95, 51, 0.4);
+            position: relative; overflow: hidden; transition: all 0.2s;
+        }
+        .btn-lift:disabled { background-color: #555 !important; box-shadow: none; cursor: not-allowed; opacity: 0.8; }
+        .cooldown-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: #00e676; width: 0%; }
+        .btn-challenge { width: 100%; padding: 6px; border: 2px solid rgba(0,0,0,0.4); border-radius: 50px; background-color: transparent; color: #333; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+        /* Oto Tıklayıcı */
+        .autoclicker-panel { background: rgba(0,0,0,0.06); border: 1px dashed rgba(0,0,0,0.2); border-radius: 12px; padding: 5px 12px; display: flex; justify-content: space-between; align-items: center; color: #222; font-size: 11px; font-weight: bold; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00e676; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* 💬 GLOBAL MESAJ GÖNDERME ALANI */
+        .chat-input-area { display: flex; gap: 4px; width: 100%; margin-top: 2px; }
+        .chat-input-field { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1px solid #ccc; background: #fff; color: #333; font-size: 12px; }
+        .chat-send-btn { background: #2196f3; border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+        /* Alt Menü Izgarası */
+        .bottom-menu-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%; margin-top: 2px; }
+        .nav-btn { background: #2b2b2b; border: 1px solid #444; color: white; padding: 8px 0; border-radius: 10px; font-size: 9px; font-weight: bold; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .dev-btn { background: #b71c1c; border-color: #d32f2f; }
+        .vip-btn { background: #aa00ff; border-color: #d500f9; color: #fff; }
+        .custom-btn { background: #0091ea; border-color: #00b0ff; }
+
+        /* Modallar */
+        .modal { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 20; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: linear-gradient(180deg, #2b2b2b, #1e1e1e); padding: 16px; border-radius: 20px; width: 90%; max-height: 85%; overflow-y: auto; text-align: center; border: 1px solid #444; }
+        .modal.active .modal-content { transform: scale(1); opacity: 1; }
+        .close-btn { background: #e65f33; border: none; padding: 8px 20px; color: white; border-radius: 20px; cursor: pointer; margin-top: 15px; font-weight: bold;}
+
+        /* Özelleştirme Buton Grupları */
+        .opt-row { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+        .opt-btn { background: #444; border: 1px solid #666; color: white; padding: 6px 10px; font-size: 11px; border-radius: 6px; cursor: pointer; }
+        .opt-btn.active { background: #00e676; color: black; font-weight: bold; }
+        
+        .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 10px 0; }
+        .inventory-card { background: #333; border: 1px solid #444; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .inventory-card.has-equipped { border: 1px dashed #ffd700; background: #26241e; }
+        .card-count { position: absolute; top: 4px; right: 6px; background: rgba(0,0,0,0.6); padding: 2px 5px; border-radius: 10px; font-size: 9px; color: #ffd700; }
+        .card-btn-group { display: flex; gap: 3px; width: 100%; margin-top: 4px; }
+        .card-btn { background: #2196f3; border: none; color: white; padding: 4px 2px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; flex: 1; }
+        
+        .list-style { text-align: left; margin: 10px 0; padding: 0; list-style: none; }
+        .list-style li { padding: 6px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; font-size: 12px; align-items: center;}
+        .dev-input { width: 90%; padding: 7px; border-radius: 6px; border: 1px solid #444; background: #111; color: white; text-align: center; margin-bottom: 5px; font-size: 12px; }
+        .section-title { margin: 8px 0 4px 0; color: #ffd700; border-bottom: 1px solid #444; padding-bottom: 2px; font-size: 12px; text-transform: uppercase;}
+    </style>
+</head>
+<body>
+
+<div class="game-container" onclick="closeBagDrawerOutside(event)">
+    <div class="global-marquee-wrapper">
+        <div class="global-marquee" id="globalChatText">Duyuru: Squat Güncellemesi Yayında! Emir artık ağırlıkları çömelerek kaldırıyor!</div>
+    </div>
+
+    <div class="top-status">
+        <div class="currency-box">
+            <span class="gold-txt">🪙 <span id="goldDisplay">0</span></span>
+            <span class="pet-txt">🐾 Takılı: <span id="petStatusDisplay">0/14</span></span>
+        </div>
+        <div class="multiplier-box">
+            <span style="opacity:0.8; font-size:9px; text-transform:uppercase;">Protein Çarpanı</span>
+            <span class="mult-value" id="multDisplay">1X</span>
+        </div>
+    </div>
+    
+    <div class="stat-container">
+        <div class="title">Current Str</div>
+        <div class="score" id="strDisplay">0</div>
+        <div class="high-score" id="highScoreDisplay">High Score: 0M</div>
+    </div>
+
+    <div class="left-bag-trigger" onclick="toggleBagDrawer(event)">🎒</div>
+    <div class="slots-drawer" id="slotsDrawer" onclick="event.stopPropagation()">
+        <div class="slots-banner-title">Kuşanılan Pet Yuvaları (Maks 14)</div>
+        <div class="slots-holder" id="slotsHolder"></div>
+    </div>
+
+    <div class="stage" id="stage">
+        <div class="character-wrapper" id="charWrapper">
+            <div class="pet-swarm" id="activePetSwarm"></div>
+            
+            <div class="char-body" id="visualBody"></div>
+            
+            <div class="char-head" id="visualHead">
+                <div class="hair-layer" id="layerHair"></div>
+                <div class="hat-layer" id="layerHat"><div class="hat-brim" id="layerHatBrim"></div></div>
+                <div class="eyes-layer" id="layerEyes"></div>
+            </div>
+            
+            <div class="char-legs-container" id="visualLegs">
+                <div class="leg" id="leftLeg"><div class="foot" id="leftFoot"></div></div>
+                <div class="leg" id="rightLeg"><div class="foot" id="rightFoot"></div></div>
+            </div>
+
+            <div class="lift-group" id="liftGroup">
+                <div class="left-arm" id="armL"></div>
+                <div class="right-arm" id="armR"></div>
+                <div class="barbell-bar">
+                    <div class="barbell-glow" id="barGlow">✨ GLOW</div>
+                </div>
+                <div class="plates-left weight-plates" id="plateL"></div>
+                <div class="plates-right weight-plates" id="plateR"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-lift" id="liftBtn" onclick="triggerLift()">
+            🏋 Lift (Squat)
+            <div class="cooldown-bar" id="cdBar"></div>
+        </button>
+        
+        <button class="btn-challenge" onclick="challengeHill()">
+            Challenge The Hill (+🪙)
+        </button>
+
+        <div class="autoclicker-panel">
+            <span id="autoClickerLabel">🤖 Auto-Lifting (Kilitli - 100k 🪙)</span>
+            <label class="switch" id="autoSwitchWrapper" style="display:none;">
+                <input type="checkbox" id="autoClickToggle" onchange="toggleAutoClicker()">
+                <span class="slider"></span>
+            </label>
+            <button id="buyAutoBtn" class="buy-btn" style="padding:4px 8px; font-size:11px;" onclick="unlockAutoClicker()">Satın Al</button>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="customChatMessage" class="chat-input-field" placeholder="Küresel sohbete mesaj yaz Emir...">
+            <button class="chat-send-btn" onclick="sendGlobalMessage()">Gönder</button>
+        </div>
+
+        <div class="bottom-menu-grid">
+            <button class="nav-btn dev-btn" onclick="openModal('devModal')">🛠 Dev</button>
+            <button class="nav-btn vip-btn" onclick="handleVipAccess()">💎 VIP</button>
+            <button class="nav-btn custom-btn" onclick="openModal('customRoomModal')">🎨 Oda</button>
+            <button class="nav-btn" onclick="openModal('shopModal')">🛒 Market</button>
+            <button class="nav-btn" style="background:#ff9800; color:#000;" onclick="openModal('inventoryModal')">🎒 Çanta</button>
+            <button class="nav-btn" onclick="openModal('vsModal')">⚔️ VS</button>
+        </div>
+    </div>
+
+    <div class="modal" id="customRoomModal">
+        <div class="modal-content">
+            <h3 style="color:#00b0ff; margin-top:0;">🎨 Sporcu Özelleştirme Odası</h3>
+            
+            <div class="section-title">🏋️ Ağırlık Boyutu Seçimi</div>
+            <div class="opt-row">
+                <button class="opt-btn" id="size-small" onclick="setWeightSize('small')">Küçük (Hızlı)</button>
+                <button class="opt-btn active" id="size-medium" onclick="setWeightSize('medium')">Orta (Normal)</button>
+                <button class="opt-btn" id="size-large" onclick="setWeightSize('large')">Büyük (+Str / Yavaş)</button>
+            </div>
+
+            <div class="section-title">🎨 Ağırlık Plaka Rengi</div>
+            <div class="opt-row">
+                <button class="opt-btn" onclick="setPlateColor('#ffffff')">Beyaz</button>
+                <button class="opt-btn" onclick="setPlateColor('#d32f2f')">Kırmızı</button>
+                <button class="opt-btn" onclick="setPlateColor('#2196f3')">Mavi</button>
+                <button class="opt-btn" onclick="setPlateColor('#ffd700')">Altın</button>
+                <button class="opt-btn" onclick="setPlateColor('#9c27b0')">Mor</button>
+                <button class="opt-btn" onclick="setPlateColor('#00e676')">Yeşil</button>
+            </div>
+
+            <div class="section-title">👒 Gardırop (Karakter Üzerine Oturan Tasarımlar)</div>
+            <div style="text-align:left; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+                <label>🤠 Şapka Türü: <select id="cHat" onchange="applyClothes()"><option value="none">Yok</option><option value="cowboy">Kovboy Şapkası (Kahverengi)</option><option value="crown">Kral Tacı (Altın Sarısı)</option></select></label>
+                <label>🕶️ Gözlük: <select id="cEyes" onchange="applyClothes()"><option value="none">Yok</option><option value="black">Siyah Güneş Gözlüğü</option></select></label>
+                <label>💇 Saç Stili: <select id="cHair" onchange="applyClothes()"><option value="none">Yok</option><option value="fire">Alev Kırmızısı Saç</option><option value="ice">Buz Mavisi Saç</option></select></label>
+                <label>👕 Tişört Rengi: <select id="cShirt" onchange="applyClothes()"><option value="default">Klasik Deri Rengi</option><option value="blue">Mavi Atlet</option><option value="red">Kırmızı Spor Tişört</option></select></label>
+                <label>🧥 Ceket / Pelerin: <select id="cJacket" onchange="applyClothes()"><option value="none">Yok</option><option value="hero">Kahraman Pelerini (Kırmızı)</option></select></label>
+                <label>🩳 Pantolon / Şort: <select id="cPants" onchange="applyClothes()"><option value="default">Kahverengi Şort</option><option value="dark">Siyah Eşofman Altı</option></select></label>
+                <label>⚡ Ağırlık Efekti: <select id="cBarAcc" onchange="applyClothes()"><option value="none">Yok</option><option value="glow">Işıltılı Bar Parıltısı</option></select></label>
+            </div>
+
+            <button class="close-btn" onclick="closeModal('customRoomModal')">Değişiklikleri Kaydet</button>
+        </div>
+    </div>
+
+    <div class="modal" id="vipModal">
+        <div class="modal-content" style="border: 2px solid #ffd700;">
+            <h3 style="color:#ffd700; margin-top:0;">💎 Ultra VIP Ayrıcalık Alanı</h3>
+            <p style="font-size:12px; color:#aaa;">Emir VIP sistemine hoş geldiniz! Burada her şey sizin için bedava ve sınırsız!</p>
+            
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                <button class="btn-lift" style="background:#aa00ff;" onclick="hatchVipSecretPet()">👽 BEDAVA BİR YÜK SECRET PET AL</button>
+                <button class="btn-lift" style="background:#00e676; color:#000;" onclick="getVipFreeStr()">💪 BEDAVA +50,000 GÜÇ YÜKLE</button>
+            </div>
+            <button class="close-btn" onclick="closeModal('vipModal')">Çıkış Yap</button>
+        </div>
+    </div>
+
+    <div class="modal" id="inventoryModal">
+        <div class="modal-content">
+            <h3 style="color:#ff9800; margin-top:0;">🎒 Sporcu Envanteri</h3>
+            <p style="font-size:11px; color:#aaa; margin:0;">Aynı petten 3 adet birleştirildiğinde güçleri kalıcı olarak 2X katlanır!</p>
+            <div class="inventory-grid" id="inventoryGridArea"></div>
+            <button class="close-btn" onclick="closeModal('inventoryModal')">Kapat</button>
+        </div>
+    </div>
+
+    <div class="modal" id="shopModal">
+        <div class="modal-content">
+            <h3 style="color:#ffd700; margin-top:0;">🛒 Protein Pazarı</h3>
+            <div class="section-title">🐾 Şanslı Pet Çıkarma</div>
+            <div class="shop-grid">
+                <div class="shop-item" style="background: linear-gradient(135deg, #444, #2b2b2b); border: 1px dashed #ffd700;">
+                    <div><strong>🥚 Gizemli Pet Yumurtası</strong></div>
+                    <button class="buy-btn" style="background:#00e676; color:#000;" onclick="hatchPetEgg(30)">30 🪙</button>
+                </div>
+            </div>
+            <div class="section-title">⚡ Protein Barları</div>
+            <div class="shop-grid">
+                <div class="shop-item"><div><strong>2X Protein</strong></div><button class="buy-btn" onclick="buyMultiplier(2, 50)">50 🪙</button></div>
+                <div class="shop-item"><div><strong>5X Fit Bar</strong></div><button class="buy-btn" onclick="buyMultiplier(5, 180)">180 🪙</button></div>
+                <div class="shop-item"><div><strong>10X Toz</strong></div><button class="buy-btn" onclick="buyMultiplier(10, 450)">450 🪙</button></div>
+            </div>
+            <button class="close-btn" onclick="closeModal('shopModal')">Kapat</button>
+        </div>
+    </div>
+
+    <div class="modal" id="vsModal">
+        <div class="modal-content">
+            <h3 style="color:#00e676; margin-top:0;">⚔️ Canlı Düello</h3>
+            <ul class="list-style">
+                <li><span>🤖 AlphaBot (Str: 50)</span><button class="buy-btn" style="background:#d32f2f;color:#fff;" onclick="fightBot(50, 20)">Savaş</button></li>
+                <li><span>🤖 OmegaBot (Str: 500)</span><button class="buy-btn" style="background:#d32f2f;color:#fff;" onclick="fightBot(500, 150)">Savaş</button></li>
+                <li><span>🤖 GigaEmir (Str: 9999)</span><button class="buy-btn" style="background:#ffd700;color:#000;" onclick="fightBot(9999, 2000)">Savaş</button></li>
+            </ul>
+            <button class="close-btn" onclick="closeModal('vsModal')">Geri Dön</button>
+        </div>
+    </div>
+
+    <div class="modal" id="devModal">
+        <div class="modal-content">
+            <h3 style="color:#d32f2f; margin-top:0;">👑 Emir Admin Odası & Kontrolleri</h3>
+            
+            <div class="section-title">🚨 Sesli Admin Duyuru Alanı</div>
+            <input type="text" id="adminSpecialMessage" class="dev-input" placeholder="Tüm sunucuya bip sesiyle duyuru at...">
+            <button class="close-btn" style="background:#2196f3; width:100%; margin: 2px 0 8px 0;" onclick="sendAdminVoiceMessage()">Sesli Duyuru Gönder 🚨</button>
+
+            <div class="section-title">Kaynak Ekleme</div>
+            <input type="text" id="adminGoldAdd" class="dev-input" placeholder="Altın Ekle (Örn: 5000)"><br>
+            <input type="text" id="adminStrAdd" class="dev-input" placeholder="Güç Ekle (Örn: 1000)"><br>
+            <input type="text" id="adminMultSet" class="dev-input" placeholder="Çarpan Ayarla (Örn: 50)"><br>
+            <select id="adminPetSet" class="dev-input" style="width:95%; background:#111; color:white;">
+                <option value="">Pet Ekle</option>
+                <option value="Common">🐶 Common Pet</option>
+                <option value="Secret">👽 Secret Pet</option>
+            </select>
+            <button class="close-btn" style="background:#ff3d00; width:100%; margin-top:8px;" onclick="executeUniversalCommand()">Uygula ⚡</button>
+            <button class="close-btn" style="background:#b71c1c; width:95%; margin-top:5px; font-size:11px;" onclick="resetAllData()">⚠️ Tüm Verileri Sıfırla</button>
+            <button class="close-btn" onclick="closeModal('devModal')">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let strength = 0; let highScore = 0; let gold = 0; let clickPower = 1; 
+    let isLiftOnCooldown = false; let hasAutoClicker = false; let autoClickInterval = null;
+    let isVipUnlocked = false; let currentWeightSize = 'medium';
+
+    let equippedPets = []; 
+    let inventory = { "Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Secret": 0 };
+    let mergeMultipliers = { "Common": 1, "Uncommon": 1, "Rare": 1, "Epic": 1, "Legendary": 1, "Secret": 1 }; 
+
+    const petTiers = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Secret"];
+    const petAssets = {
+        "Common": { icon: "🐶", baseBonus: 2 },
+        "Uncommon": { icon: "🐸", baseBonus: 10 },
+        "Rare": { icon: "🐯", baseBonus: 50 },
+        "Epic": { icon: "🐉", baseBonus: 150 },
+        "Legendary": { icon: "👑", baseBonus: 500 },
+        "Secret": { icon: "👽", baseBonus: 2000 }
+    };
+
+    // Web Audio API Bip Sesi
+    function playAdminAlertSound() {
+        try {
+            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let oscillator = audioCtx.createOscillator();
+            let gainNode = audioCtx.createGain();
+            oscillator.type = 'sine'; oscillator.frequency.value = 880;
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            setTimeout(() => { oscillator.stop(); audioCtx.close(); }, 1000);
+        } catch(e) {}
+    }
+
+    // 💾 OTO-KAYIT SİSTEMİ
+    function saveGame() {
+        localStorage.setItem('emir_gym_strength', strength.toString());
+        localStorage.setItem('emir_gym_highscore', highScore.toString());
+        localStorage.setItem('emir_gym_gold', gold.toString());
+        localStorage.setItem('emir_gym_clickpower', clickPower.toString());
+        localStorage.setItem('emir_gym_equipped', JSON.stringify(equippedPets));
+        localStorage.setItem('emir_gym_inventory', JSON.stringify(inventory));
+        localStorage.setItem('emir_gym_mergemults', JSON.stringify(mergeMultipliers));
+        localStorage.setItem('emir_gym_hasauto', hasAutoClicker.toString());
+        localStorage.setItem('emir_gym_vip', isVipUnlocked.toString());
+    }
+
+    function loadGame() {
+        if (localStorage.getItem('emir_gym_strength') !== null) {
+            strength = parseInt(localStorage.getItem('emir_gym_strength')) || 0;
+            highScore = parseInt(localStorage.getItem('emir_gym_highscore')) || 0;
+            gold = parseInt(localStorage.getItem('emir_gym_gold')) || 0;
+            clickPower = parseInt(localStorage.getItem('emir_gym_clickpower')) || 1;
+            equippedPets = JSON.parse(localStorage.getItem('emir_gym_equipped')) || [];
+            inventory = JSON.parse(localStorage.getItem('emir_gym_inventory')) || { "Common":0,"Uncommon":0,"Rare":0,"Epic":0,"Legendary":0,"Secret":0 };
+            mergeMultipliers = JSON.parse(localStorage.getItem('emir_gym_mergemults')) || { "Common":1,"Uncommon":1,"Rare":1,"Epic":1,"Legendary":1,"Secret":1 };
+            hasAutoClicker = localStorage.getItem('emir_gym_hasauto') === 'true';
+            isVipUnlocked = localStorage.getItem('emir_gym_vip') === 'true';
+        }
+        updateUI(); checkAutoClickerUI(); applyClothes(); setPlateColor('#ffd700');
+    }
+
+    function resetAllData() {
+        if(confirm("Tüm verileri tamamen sıfırlamak istiyor musun Emir?")) {
+            localStorage.clear();
+            strength = 0; highScore = 0; gold = 0; clickPower = 1; equippedPets = []; hasAutoClicker = false; isVipUnlocked = false;
+            inventory = { "Common":0,"Uncommon":0,"Rare":0,"Epic":0,"Legendary":0,"Secret":0 };
+            mergeMultipliers = { "Common":1,"Uncommon":1,"Rare":1,"Epic":1,"Legendary":1,"Secret":1 };
+            if(autoClickInterval) clearInterval(autoClickInterval);
+            updateUI(); checkAutoClickerUI(); closeModal('devModal');
+        }
+    }
+
+    // VIP DENETİMİ
+    function handleVipAccess() {
+        if (isVipUnlocked || gold >= 400000) {
+            if(!isVipUnlocked && gold >= 400000) { gold -= 400000; isVipUnlocked = true; }
+            openModal('vipModal');
+        } else {
+            let answer = prompt("VIP odasını açmak için 400,000 Altın gerekiyor. Sen ADMIN Emir isen şifreyi yaz ve bedava gir:");
+            if(answer === "emir" || answer === "admin") { isVipUnlocked = true; openModal('vipModal'); } 
+            else { alert("Yetersiz Altın veya Yanlış Yetki!"); }
+        }
+        updateUI();
+    }
+
+    function hatchVipSecretPet() { inventory["Secret"] += 5; updateUI(); }
+    function getVipFreeStr() { strength += 50000; updateUI(); }
+
+    // 🏋️ AĞIRLIK BOYUT VE RENK
+    function setWeightSize(size) {
+        currentWeightSize = size;
+        document.getElementById('size-small').classList.remove('active');
+        document.getElementById('size-medium').classList.remove('active');
+        document.getElementById('size-large').classList.remove('active');
+        document.getElementById(`size-${size}`).classList.add('active');
+        
+        let pL = document.getElementById('plateL'); let pR = document.getElementById('plateR');
+        if (size === 'small') { pL.style.width = '14px'; pL.style.height = '30px'; pR.style.width = '14px'; pR.style.height = '30px'; }
+        if (size === 'medium') { pL.style.width = '24px'; pL.style.height = '48px'; pR.style.width = '24px'; pR.style.height = '48px'; }
+        if (size === 'large') { pL.style.width = '36px'; pL.style.height = '65px'; pR.style.width = '36px'; pR.style.height = '65px'; }
+    }
+
+    function setPlateColor(color) {
+        document.getElementById('plateL').style.backgroundColor = color;
+        document.getElementById('plateR').style.backgroundColor = color;
+    }
+
+    // 👒 GERÇEK GÖRSEL GARDIROP UYGULAYICI (EMOJİ DEĞİL)
+    function applyClothes() {
+        let hat = document.getElementById('cHat').value;
+        let eyes = document.getElementById('cEyes').value;
+        let hair = document.getElementById('cHair').value;
+        let shirt = document.getElementById('cShirt').value;
+        let jacket = document.getElementById('cJacket').value;
+        let pants = document.getElementById('cPants').value;
+        let glow = document.getElementById('cBarAcc').value;
+
+        // Şapka katmanı ayarı
+        let lHat = document.getElementById('layerHat');
+        let lBrim = document.getElementById('layerHatBrim');
+        if(hat === 'cowboy') {
+            lHat.style.display = 'block'; lHat.style.backgroundColor = '#8b5a2b'; lBrim.style.display = 'block'; lBrim.style.backgroundColor = '#8b5a2b';
+        } else if(hat === 'crown') {
+            lHat.style.display = 'block'; lHat.style.backgroundColor = '#ffd700'; lBrim.style.display = 'none';
+        } else { lHat.style.display = 'none'; lBrim.style.display = 'none'; }
+
+        // Gözlük katmanı ayarı
+        document.getElementById('layerEyes').style.display = (eyes === 'black') ? 'block' : 'none';
+
+        // Saç katmanı ayarı
+        let lHair = document.getElementById('layerHair');
+        if(hair === 'fire') { lHair.style.display = 'block'; lHair.style.backgroundColor = '#ff3d00'; }
+        else if(hair === 'ice') { lHair.style.display = 'block'; lHair.style.backgroundColor = '#00e5ff'; }
+        else { lHair.style.display = 'none'; }
+
+        // Tişört katmanı ayarı
+        let lBody = document.getElementById('visualBody');
+        if(shirt === 'blue') { lBody.style.backgroundColor = '#2196f3'; }
+        else if(shirt === 'red') { lBody.style.backgroundColor = '#d32f2f'; }
+        else { lBody.style.backgroundColor = '#573e36'; }
+
+        // Pantolon katmanı ayarı (Bacak renklerini etkiler)
+        let legL = document.getElementById('leftLeg'); let legR = document.getElementById('rightLeg');
+        if(pants === 'dark') { legL.style.backgroundColor = '#222'; legR.style.backgroundColor = '#222'; }
+        else { legL.style.backgroundColor = '#573e36'; legR.style.backgroundColor = '#573e36'; }
+
+        // Pelerin / Ceket Etkisi
+        if(jacket === 'hero') { lBody.style.boxShadow = '-8px 0px 0px #ff1744'; }
+        else { lBody.style.boxShadow = 'none'; }
+
+        // Bar Işıltısı
+        document.getElementById('barGlow').style.display = (glow === 'glow') ? 'block' : 'none';
+    }
+
+    function toggleBagDrawer(event) { event.stopPropagation(); document.getElementById('slotsDrawer').classList.toggle('open'); }
+    function closeBagDrawerOutside(event) { document.getElementById('slotsDrawer').classList.remove('remove'); }
+
+    function sendGlobalMessage() {
+        let msgInput = document.getElementById('customChatMessage'); let txt = msgInput.value.trim();
+        if(txt !== "") { document.getElementById('globalChatText').innerText = `💬 [Oyuncu]: ${txt}`; msgInput.value = ""; }
+    }
+
+    function sendAdminVoiceMessage() {
+        let txt = document.getElementById('adminSpecialMessage').value.trim();
+        if(txt !== "") {
+            playAdminAlertSound();
+            document.getElementById('globalChatText').style.color = '#ff3d00';
+            document.getElementById('globalChatText').innerText = `🚨 [ADMİN UYARISI]: ${txt}`;
+            document.getElementById('adminSpecialMessage').value = "";
+            closeModal('devModal');
+        }
+    }
+
+    // 🏋️‍♂️ DİNAMİK SQUAT VE LIFT TETİKLEME MEKANİZMASI
+    function triggerLift() {
+        if (isLiftOnCooldown) return;
+        isLiftOnCooldown = true; liftBtn.disabled = true;
+
+        let sizeBonus = 1; let cooldownDuration = 1000;
+        if (currentWeightSize === 'small') { cooldownDuration = 1000; sizeBonus = 1; }
+        if (currentWeightSize === 'medium') { cooldownDuration = 1100; sizeBonus = 2; }
+        if (currentWeightSize === 'large') { cooldownDuration = 1400; sizeBonus = 5; }
+
+        // 1. AŞAMA: SQUAT HAREKETİ (Çömelme Başlar)
+        let wrapper = document.getElementById('charWrapper');
+        wrapper.className = "character-wrapper squatting";
+
+        // 2. AŞAMA: AYAĞA KALKMA VE HALTERİ YUKARI KALDIRMA (Squat'tan Doğrulma)
+        setTimeout(() => {
+            wrapper.className = "character-wrapper lifting-up";
+            
+            let totalPetBonus = 0;
+            equippedPets.forEach(tier => { if(petAssets[tier]) totalPetBonus += (petAssets[tier].baseBonus * mergeMultipliers[tier]); });
+            strength += ((clickPower * sizeBonus) + totalPetBonus);
+            strDisplay.innerText = strength;
+        }, cooldownDuration * 0.3);
+
+        // Cooldown çubuğu animasyonu
+        cdBar.style.transition = 'none'; cdBar.style.width = '100%';
+        setTimeout(() => { cdBar.style.transition = `width ${cooldownDuration}ms linear`; cdBar.style.width = '0%'; }, 10);
+
+        // Pozisyonu normale döndürme ve cooldown bitişi
+        setTimeout(() => { wrapper.className = "character-wrapper"; }, cooldownDuration * 0.85);
+        setTimeout(() => { isLiftOnCooldown = false; liftBtn.disabled = false; }, cooldownDuration);
+        saveGame();
+    }
+
+    function unlockAutoClicker() {
+        if (gold >= 100000) { gold -= 100000; hasAutoClicker = true; checkAutoClickerUI(); updateUI(); } else { alert("100,000 Gold gerekli!"); }
+    }
+    function checkAutoClickerUI() {
+        if (hasAutoClicker) {
+            document.getElementById('autoClickerLabel').innerText = "🤖 Auto-Lifting Aktif:";
+            document.getElementById('buyAutoBtn').style.display = 'none';
+            document.getElementById('autoSwitchWrapper').style.display = 'inline-block';
+        }
+    }
+    function toggleAutoClicker() {
+        if (document.getElementById('autoClickToggle').checked) {
+            autoClickInterval = setInterval(() => { if (!isLiftOnCooldown) triggerLift(); }, 1450);
+        } else { if(autoClickInterval) clearInterval(autoClickInterval); }
+    }
+
+    function challengeHill() {
+        if (strength > 0) {
+            let earnedGold = Math.floor(Math.random() * 20) + 30; gold += earnedGold;
+            if (strength > highScore) highScore = strength;
+            alert(`🔥 Mesafe Kat Edildi! \nKazanç: 🪙 ${earnedGold} Gold!`);
+            strength = 0; updateUI();
+        } else { alert("Önce antrenman yapmalısın!"); }
+    }
+
+    function hatchPetEgg(cost) {
+        if (gold >= cost) {
+            gold -= cost; let rand = Math.random() * 100; let rolledTier = "Common";
+            if (rand < 2) rolledTier = "Secret";
+            else if (rand < 7) rolledTier = "Legendary";
+            else if (rand < 18) rolledTier = "Epic";
+            else if (rand < 40) rolledTier = "Rare";
+            else if (rand < 70) rolledTier = "Uncommon";
+            inventory[rolledTier]++; updateUI();
+        } else { alert("Yetersiz altın!"); }
+    }
+
+    function toggleEquipPet(tier) {
+        let index = equippedPets.indexOf(tier);
+        if (index > -1) { equippedPets.splice(index, 1); } 
+        else {
+            if (equippedPets.length >= 14) { alert("Maks 14 pet takabilirsin!"); return; }
+            let currentEquippedCount = equippedPets.filter(t => t === tier).length;
+            if (inventory[tier] > currentEquippedCount) { equippedPets.push(tier); } 
+            else { alert("Boşta bu petten kalmadı!"); }
+        }
+        renderInventory(); updateUI();
+    }
+
+    function mergePets(tier) {
+        if (inventory[tier] >= 3) {
+            inventory[tier] -= 3; mergeMultipliers[tier] *= 2; equippedPets = [];
+            renderInventory(); updateUI();
+        }
+    }
+
+    function renderInventory() {
+        const grid = document.getElementById('inventoryGridArea'); grid.innerHTML = "";
+        petTiers.forEach(tier => {
+            let count = inventory[tier] || 0; let asset = petAssets[tier];
+            let curEquipped = equippedPets.filter(t => t === tier).length;
+            let curPower = asset.baseBonus * mergeMultipliers[tier];
+
+            let card = document.createElement('div');
+            card.className = `inventory-card ${curEquipped > 0 ? 'has-equipped' : ''}`;
+            card.innerHTML = `<div class="card-count">x${count}</div>
+                <div style="font-size:24px;">${asset.icon}</div>
+                <div style="font-weight:bold; font-size:11px;">${tier}</div>
+                <div style="font-size:9px;color:#00e676;">+${curPower} Str</div>`;
+            
+            let btnGroup = document.createElement('div'); btnGroup.className = "card-btn-group";
+            let eqBtn = document.createElement('button'); eqBtn.className = "card-btn"; eqBtn.innerText = "Tak/Çıkar";
+            eqBtn.onclick = function() { toggleEquipPet(tier); }; btnGroup.appendChild(eqBtn);
+
+            if (count >= 3) {
+                let mBtn = document.createElement('button'); mBtn.className = "card-btn"; mBtn.style.background="#e040fb"; mBtn.innerText = "🧬 Evrim";
+                mBtn.onclick = function() { mergePets(tier); }; btnGroup.appendChild(mBtn);
+            }
+            card.appendChild(btnGroup); grid.appendChild(card);
+        });
+    }
+
+    function buyMultiplier(multiplier, cost) {
+        if (gold >= cost) { gold -= cost; clickPower = multiplier; updateUI(); closeModal('shopModal'); } else { alert("Yetersiz Altın!"); }
+    }
+
+    // Universal komut çalıştırıcı
+    function executeUniversalCommand() {
+        let goldInput = document.getElementById('adminGoldAdd').value.trim();
+        let strInput = document.getElementById('adminStrAdd').value.trim();
+        let multInput = document.getElementById('adminMultSet').value.trim();
+        let petVal = document.getElementById('adminPetSet').value;
+
+        if (goldInput !== "") gold += parseInt(goldInput);
+        if (strInput !== "") strength += parseInt(strInput);
+        if (multInput !== "") clickPower = parseInt(multInput);
+        if (petVal !== "") inventory[petVal]++;
+        
+        document.getElementById('adminGoldAdd').value = ""; document.getElementById('adminStrAdd').value = "";
+        document.getElementById('adminMultSet').value = ""; updateUI(); closeModal('devModal');
+    }
+
+    function fightBot(botStr, goldReward) {
+        let totalPetBonus = 0;
+        equippedPets.forEach(tier => { totalPetBonus += (petAssets[tier].baseBonus * mergeMultipliers[tier]); });
+        if((strength + totalPetBonus) >= botStr) { gold += goldReward; alert("⚔️ Zafer kazandın!"); } else { alert("❌ Gücün yetersiz!"); }
+        updateUI(); closeModal('vsModal');
+    }
+
+    function openModal(id) { let m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => { m.classList.add('active'); }, 10); if (id === 'inventoryModal') renderInventory(); }
+    function closeModal(id) { let m = document.getElementById(id); m.classList.remove('active'); setTimeout(() => { m.style.display = 'none'; }, 300); }
+    
+    function updateUI() { 
+        strDisplay.innerText = strength; highScoreDisplay.innerText = `High Score: ${highScore}M`; goldDisplay.innerText = gold; multDisplay.innerText = clickPower + "X";
+        petStatusDisplay.innerText = `${equippedPets.length}/14`;
+
+        slotsHolder.innerHTML = "";
+        for(let i=0; i<14; i++) {
+            let dot = document.createElement('div'); dot.className = "slot-dot";
+            if(equippedPets[i]) { dot.classList.add('full'); dot.innerText = petAssets[equippedPets[i]].icon; }
+            slotsHolder.appendChild(dot);
+        }
+
+        activePetSwarm.innerHTML = "";
+        equippedPets.forEach(tier => {
+            let pSpan = document.createElement('span'); pSpan.style.fontSize = "14px"; pSpan.innerText = petAssets[tier].icon; activePetSwarm.appendChild(pSpan);
+        });
+        saveGame(); 
+    }
+
+    window.onload = function() { loadGame(); };
+</script>
+
+</body>
+</html>
